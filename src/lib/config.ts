@@ -1,7 +1,6 @@
 import type { Brand } from "@/types";
 
 export const APP_NAME = "AccesosLink";
-export const DB_SCHEMA = process.env.DB_SCHEMA || "accesoslink";
 export const APP_BASE_URL =
   process.env.APP_BASE_URL || "https://accesos.tdemperu.com";
 

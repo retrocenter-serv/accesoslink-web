@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { leerFilas } from "@/lib/sheets";
 
 export async function GET() {
   const startedAt = Date.now();
-  await query("select 1 as ok");
+  await leerFilas("CONFIG_MARCA");
 
   return NextResponse.json({
     ok: true,

@@ -1,65 +1,22 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { DB_SCHEMA, defaultBrand } from "@/lib/config";
-import { query } from "@/lib/db";
-import type { AreaLink, AreaSection, AreaSummary, Brand, PublicArea, TeamMember } from "@/types";
+import { defaultBrand } from "@/lib/config";
+import { celdaBool, hoyYAhoraLima, leerFilas } from "@/lib/sheets";
+import type { AreaLink, AreaSection, AreaSummary, Brand, PublicArea, TeamDirectoryMember } from "@/types";
 
-const schema = /^[a-z_][a-z0-9_]*$/i.test(DB_SCHEMA) ? DB_SCHEMA : "accesoslink";
+const ESTADO_ELIMINADO = "ELIMINADO";
 
-type BrandRow = {
-  campo: string;
-  valor: string;
-};
+function noEliminado(row: Record<string, string>) {
+  return String(row.ESTADO_REGISTRO || "").trim().toUpperCase() !== ESTADO_ELIMINADO;
+}
 
-type AreaSummaryRow = {
-  id_area: string;
-  area: string;
-  abreviatura: string;
-  simbolo: string;
-  header: number;
-  count: string;
-};
-
-type AreaRow = {
-  id_area: string;
-  area: string;
-  abreviatura: string;
-  simbolo: string;
-  header: number;
-  portada_url: string;
-  enc_nombre: string;
-  enc_cargo: string;
-  enc_email: string;
-  enc_movil: string;
-  whatsapp_corp: string;
-  mail_grupal: string;
-};
-
-type SectionRow = {
-  id_seccion: string;
-  nombre: string;
-};
-
-type LinkRow = {
-  titulo: string;
-  url: string;
-  tipo: string;
-  interno: boolean;
-  id_seccion: string | null;
-};
-
-type TeamRow = {
-  nombre: string;
-  cargo: string;
-  email: string;
-  movil: string;
-};
+function porOrden(a: Record<string, string>, b: Record<string, string>) {
+  return Number(a.ORDEN || 0) - Number(b.ORDEN || 0);
+}
 
 export async function getBrand(): Promise<Brand> {
-  const rows = await query<BrandRow>(
-    `select campo, valor from ${schema}.config_marca`
-  );
-  const values = new Map(rows.map((row) => [row.campo, row.valor]));
+  const rows = await leerFilas("CONFIG_MARCA");
+  const values = new Map(rows.map((row) => [String(row.CAMPO || "").trim(), String(row.VALOR ?? "")]));
 
   return {
     nombreEmpresa: values.get("NOMBRE_EMPRESA") || defaultBrand.nombreEmpresa,
@@ -76,110 +33,107 @@ export async function getBrand(): Promise<Brand> {
 }
 
 export async function getAreaSummaries(): Promise<AreaSummary[]> {
-  const rows = await query<AreaSummaryRow>(`
-    select
-      a.id_area,
-      a.area,
-      a.abreviatura,
-      a.simbolo,
-      a.header,
-      count(l.id_acceso) filter (where l.estado_registro <> 'ELIMINADO') as count
-    from ${schema}.areas a
-    left join ${schema}.accesos l on l.id_area = a.id_area
-    where a.estado_registro <> 'ELIMINADO'
-    group by a.id_area, a.area, a.abreviatura, a.simbolo, a.header, a.orden
-    order by a.orden asc, a.area asc
-  `);
+  const [areas, accesos] = await Promise.all([leerFilas("AREAS"), leerFilas("ACCESOS")]);
 
-  return rows.map((row) => ({
-    id: row.id_area,
-    area: row.area,
-    abreviatura: row.abreviatura,
-    simbolo: row.simbolo,
-    header: Number(row.header || 0),
-    count: Number(row.count || 0)
-  }));
+  const counts = new Map<string, number>();
+  accesos.filter(noEliminado).forEach((row) => {
+    const id = String(row.ID_AREA || "");
+    counts.set(id, (counts.get(id) || 0) + 1);
+  });
+
+  return areas
+    .filter(noEliminado)
+    .sort(porOrden)
+    .map((row) => ({
+      id: String(row.ID_AREA || ""),
+      area: String(row.AREA || ""),
+      abreviatura: String(row.ABREVIATURA || ""),
+      simbolo: String(row.SIMBOLO || "folder"),
+      header: Number(row.HEADER || 0),
+      count: counts.get(String(row.ID_AREA || "")) || 0
+    }));
+}
+
+/**
+ * Estado mostrado HOY en "Conocer al equipo" — mismo criterio que
+ * AccesosMapper_estadoMostrado_ en GAS: (1) manual de HOY manda, (2) si no, horario de
+ * refrigerio de respaldo, (3) si no, "Presente" por defecto.
+ */
+function estadoMostrado(row: Record<string, string>, hoy: string, ahoraHHMM: string) {
+  const fechaEstado = String(row.ESTADO_FECHA || "").trim().slice(0, 10);
+  const estadoManual = String(row.ESTADO_ACTUAL || "").trim().toUpperCase();
+  if (estadoManual && fechaEstado === hoy) return estadoManual as TeamDirectoryMember["estadoMostrado"];
+
+  const inicio = String(row.REFRIGERIO_INICIO || "").trim();
+  const fin = String(row.REFRIGERIO_FIN || "").trim();
+  if (inicio && fin && ahoraHHMM >= inicio && ahoraHHMM < fin) return "REFRIGERIO";
+
+  return "PRESENTE";
 }
 
 export async function getPublicArea(
   areaId: string,
   mode: "externo" | "interno"
 ): Promise<PublicArea> {
-  const [area] = await query<AreaRow>(
-    `
-      select *
-      from ${schema}.areas
-      where id_area = $1 and estado_registro <> 'ELIMINADO'
-      limit 1
-    `,
-    [areaId]
-  );
-
-  if (!area) notFound();
-
-  const [secciones, links, equipo] = await Promise.all([
-    query<SectionRow>(
-      `
-        select id_seccion, nombre
-        from ${schema}.secciones
-        where id_area = $1 and estado_registro <> 'ELIMINADO'
-        order by orden asc, nombre asc
-      `,
-      [areaId]
-    ),
-    query<LinkRow>(
-      `
-        select titulo, url, tipo, interno, id_seccion
-        from ${schema}.accesos
-        where id_area = $1
-          and estado_registro <> 'ELIMINADO'
-          and ($2::boolean = false or interno = false)
-        order by orden asc, titulo asc
-      `,
-      [areaId, mode === "externo"]
-    ),
-    query<TeamRow>(
-      `
-        select nombre, cargo, email, movil
-        from ${schema}.equipo
-        where id_area = $1 and estado_registro <> 'ELIMINADO'
-        order by orden asc, nombre asc
-      `,
-      [areaId]
-    )
+  const [areas, secciones, accesos, equipo] = await Promise.all([
+    leerFilas("AREAS"),
+    leerFilas("SECCIONES"),
+    leerFilas("ACCESOS"),
+    leerFilas("EQUIPO")
   ]);
 
+  const area = areas.find((row) => row.ID_AREA === areaId && noEliminado(row));
+  if (!area) notFound();
+
+  const { hoy, ahoraHHMM } = hoyYAhoraLima();
+  const soloExterno = mode === "externo";
+
+  const links: AreaLink[] = accesos
+    .filter((row) => row.ID_AREA === areaId && noEliminado(row))
+    .filter((row) => !soloExterno || !celdaBool(row.INTERNO))
+    .sort(porOrden)
+    .map((row) => ({
+      titulo: String(row.TITULO || ""),
+      url: String(row.URL || ""),
+      tipo: String(row.TIPO || "LINK"),
+      interno: celdaBool(row.INTERNO),
+      seccionId: row.ID_SECCION ? String(row.ID_SECCION) : null
+    }));
+
+  const seccionesArea: AreaSection[] = secciones
+    .filter((row) => row.ID_AREA === areaId && noEliminado(row))
+    .sort(porOrden)
+    .map((row) => ({ id: String(row.ID_SECCION || ""), nombre: String(row.NOMBRE || "") }));
+
+  const equipoArea: TeamDirectoryMember[] = equipo
+    .filter((row) => row.ID_AREA === areaId && noEliminado(row))
+    .sort(porOrden)
+    .map((row) => ({
+      nombre: String(row.NOMBRE || ""),
+      cargo: String(row.CARGO || ""),
+      email: String(row.EMAIL || ""),
+      movil: String(row.MOVIL || ""),
+      estadoNota: String(row.ESTADO_NOTA || ""),
+      estadoMostrado: estadoMostrado(row, hoy, ahoraHHMM)
+    }));
+
   return {
-    id: area.id_area,
-    area: area.area,
-    abreviatura: area.abreviatura,
-    simbolo: area.simbolo,
-    header: Number(area.header || 0),
-    portadaUrl: area.portada_url,
+    id: String(area.ID_AREA || ""),
+    area: String(area.AREA || ""),
+    abreviatura: String(area.ABREVIATURA || ""),
+    simbolo: String(area.SIMBOLO || "folder"),
+    header: Number(area.HEADER || 0),
+    portadaUrl: String(area.PORTADA_URL || ""),
     encargado: {
-      nombre: area.enc_nombre,
-      cargo: area.enc_cargo,
-      email: area.enc_email,
-      movil: area.enc_movil
+      nombre: String(area.ENC_NOMBRE || ""),
+      cargo: String(area.ENC_CARGO || ""),
+      email: String(area.ENC_EMAIL || ""),
+      movil: String(area.ENC_MOVIL || "")
     },
-    whatsappCorp: area.whatsapp_corp,
-    mailGrupal: area.mail_grupal,
-    secciones: secciones.map<AreaSection>((row) => ({
-      id: row.id_seccion,
-      nombre: row.nombre
-    })),
-    links: links.map<AreaLink>((row) => ({
-      titulo: row.titulo,
-      url: row.url,
-      tipo: row.tipo,
-      interno: row.interno,
-      seccionId: row.id_seccion
-    })),
-    equipo: equipo.map<TeamMember>((row) => ({
-      nombre: row.nombre,
-      cargo: row.cargo,
-      email: row.email,
-      movil: row.movil
-    }))
+    whatsappCorp: String(area.WHATSAPP_CORP || ""),
+    mailGrupal: String(area.MAIL_GRUPAL || ""),
+    secciones: seccionesArea,
+    links,
+    equipo: equipoArea
   };
 }

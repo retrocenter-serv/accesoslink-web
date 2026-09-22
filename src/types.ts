@@ -40,6 +40,12 @@ export type TeamMember = {
   movil: string;
 };
 
+/** Integrante del directorio de equipo, con su estado de disponibilidad (ver DEC-017 en GAS). */
+export type TeamDirectoryMember = TeamMember & {
+  estadoNota: string;
+  estadoMostrado: "PRESENTE" | "AUSENTE" | "REFRIGERIO" | "OTRO";
+};
+
 export type PublicArea = {
   id: string;
   area: string;
@@ -52,5 +58,5 @@ export type PublicArea = {
   mailGrupal: string;
   secciones: AreaSection[];
   links: AreaLink[];
-  equipo: TeamMember[];
+  equipo: TeamDirectoryMember[];
 };
