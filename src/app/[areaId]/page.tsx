@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { areaUrl } from "@/lib/config";
 import { getBrand, getPublicArea } from "@/lib/areas";
+import type { AreaLink, TeamDirectoryMember } from "@/types";
 
 type Props = {
   params: Promise<{ areaId: string }>;
@@ -18,126 +19,232 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function initials(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+/** Mismo criterio que initials() en AccesosClient.html: iniciales de las 2 primeras palabras "largas". */
+function initials(name: string) {
+  const n = (name || "").trim();
+  if (!n) return "?";
+  const parts = n.split(" ").filter((w) => w.length > 2).slice(0, 2);
+  const out = parts.map((w) => w[0]).join("") || n.slice(0, 2);
+  return out.toUpperCase();
+}
+
+/** Mismo criterio que waDigits()/waHref() en AccesosClient.html (CC por defecto: Peru). */
+function waHref(v: string) {
+  let digits = (v || "").replace(/[^0-9]/g, "");
+  if (digits.length === 9) digits = "51" + digits;
+  return `https://wa.me/${digits}`;
+}
+
+function mailHref(v: string) {
+  return `mailto:${v || ""}`;
+}
+
+function qrSrc(url: string) {
+  return (
+    "https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&ecc=M&color=1c2b4a&bgcolor=ffffff&data=" +
+    encodeURIComponent(url)
+  );
+}
+
+/** Mismo catalogo que Catalogs_tipos_() en GAS (Catalogs.gs). */
+const TIPO_GLYPH: Record<string, string> = {
+  FORM: "assignment",
+  DOC: "description",
+  SHEET: "table_chart",
+  DRIVE: "folder",
+  CAL: "calendar_month",
+  MAIL: "mail",
+  MEET: "videocam",
+  DIR: "contacts",
+  MAP: "location_on",
+  LINK: "link"
+};
+
+const ESTADO_PILL: Record<string, { etiqueta: string; cls: string }> = {
+  PRESENTE: { etiqueta: "Presente", cls: "m-estado-ok" },
+  AUSENTE: { etiqueta: "Ausente", cls: "m-estado-muted" },
+  REFRIGERIO: { etiqueta: "En refrigerio", cls: "m-estado-warn" },
+  OTRO: { etiqueta: "Otro", cls: "m-estado-warn" }
+};
+
+function EstadoPill({ estado }: { estado: TeamDirectoryMember["estadoMostrado"] }) {
+  const info = ESTADO_PILL[estado] || ESTADO_PILL.PRESENTE;
+  return <span className={`m-estado ${info.cls}`}>{info.etiqueta}</span>;
+}
+
+function AccesosList({ links, externo }: { links: AreaLink[]; externo: boolean }) {
+  return (
+    <div className="acc-list">
+      {links.map((link) => (
+        <a
+          className="acc-row"
+          href={link.url}
+          key={`${link.titulo}-${link.url}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="acc-ico">
+            <span className="material-symbols-rounded">{TIPO_GLYPH[link.tipo] || "link"}</span>
+          </span>
+          <span className="acc-title">{link.titulo}</span>
+          {link.interno && !externo ? <span className="badge-int">Interno</span> : null}
+          <span className="material-symbols-rounded chev">chevron_right</span>
+        </a>
+      ))}
+    </div>
+  );
 }
 
 export default async function AreaPage({ params, searchParams }: Props) {
   const [{ areaId }, query] = await Promise.all([params, searchParams]);
   const mode = query.modo === "externo" ? "externo" : "interno";
-  const [brand, area] = await Promise.all([
-    getBrand(),
-    getPublicArea(areaId, mode)
-  ]);
+  const externo = mode === "externo";
+  const [brand, area] = await Promise.all([getBrand(), getPublicArea(areaId, mode)]);
 
-  const sections = new Map(area.secciones.map((section) => [section.id, section.nombre]));
-  const linksWithoutSection = area.links.filter((link) => !link.seccionId);
   const publicUrl = areaUrl(area.id, mode);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(publicUrl)}`;
+
+  // Mismo criterio que accesosHtml() en AccesosClient.html: primero los accesos sin sección
+  // (o con sección inexistente), luego cada sección con su nombre.
+  const seccionesValidas = new Set(area.secciones.map((s) => s.id));
+  const sinSeccion = area.links.filter((l) => !l.seccionId || !seccionesValidas.has(l.seccionId));
 
   return (
-    <main
-      className="profile"
+    <div
+      className="wrap"
       style={
         {
-          "--bg": brand.colorAppBg,
-          "--surface": brand.colorSurface,
-          "--ink": brand.colorTexto,
-          "--muted": brand.colorMuted,
-          "--primary": brand.colorPrimario,
-          "--secondary": brand.colorSecundario,
-          "--border": brand.colorBorde
+          "--c-app-bg": brand.colorAppBg,
+          "--c-surface": brand.colorSurface,
+          "--c-texto": brand.colorTexto,
+          "--c-muted": brand.colorMuted,
+          "--c-primario": brand.colorPrimario,
+          "--c-secundario": brand.colorSecundario,
+          "--c-borde": brand.colorBorde
         } as React.CSSProperties
       }
     >
-      <header className="topbar">
-        <a className="brandmark" href="/">
-          <div className="brandmark__logo">{brand.logoUrl ? " " : "A"}</div>
-          <div className="brandmark__name">{brand.nombreEmpresa}</div>
-        </a>
-      </header>
-
-      <section className="profile-hero">
+      <div className="ficha">
         <div
-          className="profile-cover"
-          style={
-            area.portadaUrl
-              ? { backgroundImage: `linear-gradient(120deg, rgb(0 74 153 / 0.72), transparent), url(${area.portadaUrl})` }
-              : undefined
-          }
-        />
-        <div className="profile-head">
-          <h1>{area.area}</h1>
-          <p className="profile-subtitle">
-            {area.encargado.nombre
-              ? `${area.encargado.nombre} · ${area.encargado.cargo || "Responsable"}`
-              : "Accesos y contactos del area."}
-          </p>
-          <div className="contact-strip">
-            {area.whatsappCorp ? <a href={`https://wa.me/${area.whatsappCorp}`}>WhatsApp</a> : null}
-            {area.mailGrupal ? <a href={`mailto:${area.mailGrupal}`}>Correo</a> : null}
-            <a href={qrUrl}>QR</a>
+          className="banner"
+          style={{
+            background: `linear-gradient(120deg, ${brand.colorPrimario}, ${brand.colorSecundario})`
+          }}
+        >
+          {area.portadaUrl ? (
+            <div className="banner-cover" style={{ backgroundImage: `url(${area.portadaUrl})` }} />
+          ) : null}
+          <div className="banner-scrim" />
+          <div className="banner-caption">
+            {brand.logoUrl ? (
+              <div className="banner-logo-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="banner-logo" src={brand.logoUrl} alt="" />
+              </div>
+            ) : null}
+            <div className="banner-title">{area.area}</div>
+            {area.abreviatura ? <div className="banner-abbr">{area.abreviatura}</div> : null}
           </div>
         </div>
-      </section>
 
-      <LinkGroup title="Accesos" links={linksWithoutSection} />
-
-      {area.secciones.map((section) => (
-        <LinkGroup
-          key={section.id}
-          title={sections.get(section.id) || "Seccion"}
-          links={area.links.filter((link) => link.seccionId === section.id)}
-        />
-      ))}
-
-      {area.equipo.length ? (
-        <section>
-          <h2 className="section-title">Equipo</h2>
-          <div className="team-list">
-            {area.equipo.map((member) => (
-              <div className="team-line" key={`${member.nombre}-${member.email}`}>
-                <strong>{member.nombre}</strong>
-                <span className="muted">{member.cargo}</span>
+        <div className="ficha-body">
+          <div className="contact">
+            {area.whatsappCorp ? (
+              <div className="c-block">
+                <span className="c-ico phone">
+                  <span className="material-symbols-rounded">call</span>
+                </span>
+                <span className="c-val">{area.whatsappCorp}</span>
+                <a className="wa-btn" href={waHref(area.whatsappCorp)} target="_blank" rel="noreferrer">
+                  <span className="material-symbols-rounded">forum</span>
+                  Escríbeme al WhatsApp
+                </a>
               </div>
-            ))}
+            ) : (
+              <div className="c-block">
+                <span className="c-ico phone disabled">
+                  <span className="material-symbols-rounded">call</span>
+                </span>
+                <span className="c-val muted">Sin WhatsApp</span>
+              </div>
+            )}
+            {area.mailGrupal ? (
+              <div className="c-block">
+                <a className="c-ico mail" href={mailHref(area.mailGrupal)} title="Manda un correo">
+                  <span className="material-symbols-rounded">mail</span>
+                </a>
+                <a className="c-val link" href={mailHref(area.mailGrupal)}>
+                  {area.mailGrupal}
+                </a>
+              </div>
+            ) : (
+              <div className="c-block">
+                <span className="c-ico mail disabled" title="Sin correo">
+                  <span className="material-symbols-rounded">mail</span>
+                </span>
+                <span className="c-val muted">Sin correo</span>
+              </div>
+            )}
           </div>
-        </section>
-      ) : null}
-    </main>
-  );
-}
 
-function LinkGroup({ title, links }: { title: string; links: { titulo: string; url: string; tipo: string; interno: boolean }[] }) {
-  if (!links.length) return null;
+          {area.equipo.length ? (
+            <>
+              <div className="acc-head">Conocer al equipo</div>
+              <div style={{ marginBottom: 16 }}>
+                {area.equipo.map((member) => (
+                  <div className="member" key={`${member.nombre}-${member.email}`}>
+                    <div className="avatar">{initials(member.nombre)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="m-name">
+                        {member.nombre}
+                        <EstadoPill estado={member.estadoMostrado} />
+                      </div>
+                      {member.cargo ? <div className="m-cargo">{member.cargo}</div> : null}
+                      {member.estadoNota ? <div className="m-nota">{member.estadoNota}</div> : null}
+                      {member.email ? (
+                        <div className="m-line">
+                          <a href={mailHref(member.email)}>{member.email}</a>
+                        </div>
+                      ) : null}
+                      {member.movil ? (
+                        <div className="m-line">
+                          <a href={waHref(member.movil)} target="_blank" rel="noreferrer">
+                            {member.movil}
+                          </a>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
 
-  return (
-    <section>
-      <h2 className="section-title">{title}</h2>
-      <div className="link-list">
-        {links.map((link) => (
-          <a
-            className={`link-row${link.interno ? " link-row--internal" : ""}`}
-            href={link.url}
-            key={`${link.titulo}-${link.url}`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <span className="row-icon">{initials(link.tipo || "Link")}</span>
-            <span>
-              <span className="row-title">{link.titulo}</span>
-              {link.interno ? <span className="row-meta">Interno</span> : null}
-            </span>
-            <span className="row-action">›</span>
-          </a>
-        ))}
+          <div className="acc-head">Accesos rápidos</div>
+          {area.links.length ? (
+            <>
+              {sinSeccion.length ? <AccesosList links={sinSeccion} externo={externo} /> : null}
+              {area.secciones.map((seccion) => {
+                const grupo = area.links.filter((l) => l.seccionId === seccion.id);
+                if (!grupo.length) return null;
+                return (
+                  <div key={seccion.id}>
+                    <div className="acc-section-title">{seccion.nombre}</div>
+                    <AccesosList links={grupo} externo={externo} />
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <div className="empty">Sin accesos por ahora.</div>
+          )}
+
+          <div className="ficha-foot">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="qr" src={qrSrc(publicUrl)} alt={`Código QR del área ${area.area}`} />
+            <div className="foot-help">Este QR y enlace son para uso {externo ? "externo" : "interno"}.</div>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

@@ -7,64 +7,54 @@ export default async function HomePage() {
   const [brand, areas] = await Promise.all([getBrand(), getAreaSummaries()]);
 
   return (
-    <main
-      className="shell"
+    <div
+      className="wrap"
       style={
         {
-          "--bg": brand.colorAppBg,
-          "--surface": brand.colorSurface,
-          "--ink": brand.colorTexto,
-          "--muted": brand.colorMuted,
-          "--primary": brand.colorPrimario,
-          "--secondary": brand.colorSecundario,
-          "--border": brand.colorBorde
+          "--c-app-bg": brand.colorAppBg,
+          "--c-surface": brand.colorSurface,
+          "--c-texto": brand.colorTexto,
+          "--c-muted": brand.colorMuted,
+          "--c-primario": brand.colorPrimario,
+          "--c-secundario": brand.colorSecundario,
+          "--c-borde": brand.colorBorde
         } as React.CSSProperties
       }
     >
-      <header className="topbar">
-        <div className="brandmark">
-          <div className="brandmark__logo">
-            {brand.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={brand.logoUrl} alt="" width="32" height="32" />
-            ) : (
-              "A"
-            )}
-          </div>
-          <div className="brandmark__name">{brand.nombreEmpresa}</div>
-        </div>
-      </header>
-
-      <section className="area-index">
-        <div>
-          <h1>Accesos rapidos por area.</h1>
-          <p className="area-index__copy">
-            Directorio operativo para compartir herramientas, contactos y
-            enlaces internos o externos desde un solo link.
-          </p>
-        </div>
-
-        <div className="area-list" aria-label="Areas disponibles">
-          {areas.map((area) => (
-            <Link className="area-row" href={`/${area.id}`} key={area.id}>
-              <span className="row-icon">{area.abreviatura || area.area.slice(0, 1)}</span>
-              <span>
-                <span className="row-title">{area.area}</span>
-                <span className="row-meta">
-                  {area.count} acceso{area.count === 1 ? "" : "s"}
-                </span>
-              </span>
-              <span className="row-action">Abrir</span>
-            </Link>
-          ))}
-
-          {!areas.length ? (
-            <div className="empty-state">
-              Aun no hay areas publicadas en el schema accesoslink.
+      <div className="hdr">
+        <div className="hdr-brand">
+          {brand.logoUrl ? (
+            <div className="hdr-logo-group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="hdr-logo" src={brand.logoUrl} alt={brand.nombreEmpresa} />
+              <div className="hdr-logo-sep" />
             </div>
           ) : null}
+          <div>
+            <h1 className="hdr-title">{brand.nombreEmpresa}</h1>
+            <div className="hdr-sub">Directorio de accesos por área</div>
+          </div>
         </div>
-      </section>
-    </main>
+      </div>
+
+      <div className="area-list" aria-label="Áreas disponibles">
+        {areas.map((area) => (
+          <Link className="area-row" href={`/${area.id}`} key={area.id}>
+            <span className="area-ico">
+              <span className="material-symbols-rounded">{area.simbolo || "folder"}</span>
+            </span>
+            <span className="area-meta">
+              <div className="area-name">{area.area}</div>
+              <div className="area-count">
+                {area.count} acceso{area.count === 1 ? "" : "s"}
+              </div>
+            </span>
+            <span className="material-symbols-rounded chev">chevron_right</span>
+          </Link>
+        ))}
+
+        {!areas.length ? <div className="empty">Aún no hay áreas publicadas.</div> : null}
+      </div>
+    </div>
   );
 }
