@@ -14,13 +14,27 @@ function porOrden(a: Record<string, string>, b: Record<string, string>) {
   return Number(a.ORDEN || 0) - Number(b.ORDEN || 0);
 }
 
+/**
+ * ID del archivo de Drive del logo (CONFIG_MARCA.LOGO_FILE_ID) — usado por /api/logo para
+ * descargarlo con la cuenta de servicio (ver lib/drive.ts, mismo motivo que DEC-015 en GAS).
+ */
+export async function getLogoFileId(): Promise<string | null> {
+  const rows = await leerFilas("CONFIG_MARCA");
+  const fila = rows.find((row) => String(row.CAMPO || "").trim() === "LOGO_FILE_ID");
+  const id = String(fila?.VALOR ?? "").trim();
+  return id || null;
+}
+
 export async function getBrand(): Promise<Brand> {
   const rows = await leerFilas("CONFIG_MARCA");
   const values = new Map(rows.map((row) => [String(row.CAMPO || "").trim(), String(row.VALOR ?? "")]));
+  // Si hay un archivo de logo en Drive, se sirve vía /api/logo (descargado con la cuenta de
+  // servicio) en vez del hotlink directo LOGO_URL, que no carga para visitantes anónimos.
+  const logoFileId = values.get("LOGO_FILE_ID") || "";
 
   return {
     nombreEmpresa: values.get("NOMBRE_EMPRESA") || defaultBrand.nombreEmpresa,
-    logoUrl: values.get("LOGO_URL") || defaultBrand.logoUrl,
+    logoUrl: logoFileId ? "/api/logo" : values.get("LOGO_URL") || defaultBrand.logoUrl,
     loginBgUrl: values.get("LOGIN_BG_URL") || defaultBrand.loginBgUrl,
     colorPrimario: values.get("COLOR_PRIMARIO") || defaultBrand.colorPrimario,
     colorSecundario: values.get("COLOR_SECUNDARIO") || defaultBrand.colorSecundario,

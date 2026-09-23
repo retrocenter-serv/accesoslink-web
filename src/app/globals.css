@@ -349,6 +349,37 @@ a {
   font-size: 12px;
   color: var(--c-muted);
 }
+.team-card .ico-flujo {
+  background: var(--c-secundario);
+}
+/* <details>/<summary> nativo, sin JS: mismo look que el boton-modal de GAS. */
+.team-card-details {
+  margin-bottom: 16px;
+}
+.team-card-details summary {
+  list-style: none;
+  margin-bottom: 0;
+}
+.team-card-details summary::-webkit-details-marker,
+.team-card-details summary::marker {
+  display: none;
+  content: "";
+}
+.team-card-details .chev {
+  transition: transform 0.15s ease;
+}
+.team-card-details[open] summary {
+  border-radius: 12px 12px 0 0;
+}
+.team-card-details[open] .chev {
+  transform: rotate(90deg);
+}
+.team-card-body {
+  background: var(--c-sutil);
+  border-radius: 0 0 12px 12px;
+  padding: 4px 14px 10px;
+  margin-top: -4px;
+}
 .acc-head {
   font-size: 11px;
   font-weight: 600;
@@ -512,6 +543,40 @@ a {
   font-size: 12px;
   color: var(--c-muted);
   margin: 8px 0 0;
+}
+
+.flujo-table-wrap {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--c-borde);
+  border-radius: 10px;
+  background: #fff;
+}
+.flujo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.flujo-table th {
+  background: var(--c-sutil);
+  color: var(--c-texto);
+  text-align: center;
+  padding: 9px 10px;
+  position: sticky;
+  top: 0;
+  font-weight: 700;
+  border-bottom: 1px solid var(--c-borde);
+}
+.flujo-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--c-borde);
+  color: var(--c-texto);
+  vertical-align: top;
+  text-align: left;
+  word-break: break-word;
+}
+.flujo-table tr:last-child td {
+  border-bottom: none;
 }
 
 @media (max-width: 480px) {

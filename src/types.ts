@@ -46,6 +46,12 @@ export type TeamDirectoryMember = TeamMember & {
   estadoMostrado: "PRESENTE" | "AUSENTE" | "REFRIGERIO" | "OTRO";
 };
 
+export type FlujoAtencion = {
+  titulo: string;
+  headers: string[];
+  rows: string[][];
+};
+
 export type PublicArea = {
   id: string;
   area: string;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { areaUrl } from "@/lib/config";
 import { getBrand, getPublicArea } from "@/lib/areas";
+import { getFlujoAtencion } from "@/lib/flujo";
 import type { AreaLink, TeamDirectoryMember } from "@/types";
 
 type Props = {
@@ -99,7 +100,11 @@ export default async function AreaPage({ params, searchParams }: Props) {
   const [{ areaId }, query] = await Promise.all([params, searchParams]);
   const mode = query.modo === "externo" ? "externo" : "interno";
   const externo = mode === "externo";
-  const [brand, area] = await Promise.all([getBrand(), getPublicArea(areaId, mode)]);
+  const [brand, area, flujo] = await Promise.all([
+    getBrand(),
+    getPublicArea(areaId, mode),
+    getFlujoAtencion()
+  ]);
 
   const publicUrl = areaUrl(area.id, mode);
 
@@ -187,9 +192,21 @@ export default async function AreaPage({ params, searchParams }: Props) {
           </div>
 
           {area.equipo.length ? (
-            <>
-              <div className="acc-head">Conocer al equipo</div>
-              <div style={{ marginBottom: 16 }}>
+            <details className="team-card-details">
+              <summary className="team-card">
+                <span className="team-ico ico-equipo">
+                  <span className="material-symbols-rounded">groups</span>
+                </span>
+                <span className="t-meta">
+                  <span className="t-title">Conocer al equipo</span>
+                  <br />
+                  <span className="t-sub">
+                    {area.equipo.length} integrante{area.equipo.length === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <span className="material-symbols-rounded chev">chevron_right</span>
+              </summary>
+              <div className="team-card-body">
                 {area.equipo.map((member) => (
                   <div className="member" key={`${member.nombre}-${member.email}`}>
                     <div className="avatar">{initials(member.nombre)}</div>
@@ -216,7 +233,43 @@ export default async function AreaPage({ params, searchParams }: Props) {
                   </div>
                 ))}
               </div>
-            </>
+            </details>
+          ) : null}
+
+          {flujo && flujo.rows.length ? (
+            <details className="team-card-details">
+              <summary className="team-card">
+                <span className="team-ico ico-flujo">
+                  <span className="material-symbols-rounded">support_agent</span>
+                </span>
+                <span className="t-meta">
+                  <span className="t-title">Flujo de atención</span>
+                  <br />
+                  <span className="t-sub">Guía rápida de contacto</span>
+                </span>
+                <span className="material-symbols-rounded chev">chevron_right</span>
+              </summary>
+              <div className="team-card-body flujo-table-wrap">
+                <table className="flujo-table">
+                  <thead>
+                    <tr>
+                      {flujo.headers.map((h, i) => (
+                        <th key={i}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flujo.rows.map((row, i) => (
+                      <tr key={i}>
+                        {row.map((cell, j) => (
+                          <td key={j}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           ) : null}
 
           <div className="acc-head">Accesos rápidos</div>

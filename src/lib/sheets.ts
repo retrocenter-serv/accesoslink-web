@@ -1,6 +1,6 @@
 import "server-only";
-import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadsheet";
+import { getGoogleAuth } from "@/lib/googleAuth";
 
 /**
  * Acceso de solo lectura al MISMO Google Sheet que ya usa el proyecto Apps Script
@@ -14,8 +14,6 @@ import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadshee
  * GOOGLE_SERVICE_ACCOUNT_KEY (la clave privada PEM, con los saltos de línea como \n).
  */
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
-
 // Cache en memoria del proceso (mismo criterio que PadronService_buscarColaboradoresLima_ en
 // GAS: 5 minutos) — en una función serverless "tibia" evita releer el Sheet en cada request;
 // en una instancia nueva (cold start) simplemente no hay nada cacheado todavía.
@@ -24,20 +22,11 @@ const rowsCache = new Map<string, { at: number; rows: Record<string, string>[] }
 
 let docPromise: Promise<GoogleSpreadsheet> | null = null;
 
-function crearAuth() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!email || !rawKey) {
-    throw new Error("Faltan GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_SERVICE_ACCOUNT_KEY.");
-  }
-  return new JWT({ email, key: rawKey.replace(/\\n/g, "\n"), scopes: SCOPES });
-}
-
 async function getDoc(): Promise<GoogleSpreadsheet> {
   if (!docPromise) {
     const id = process.env.GOOGLE_SHEET_ID;
     if (!id) throw new Error("Falta GOOGLE_SHEET_ID.");
-    const doc = new GoogleSpreadsheet(id, crearAuth());
+    const doc = new GoogleSpreadsheet(id, getGoogleAuth());
     docPromise = doc.loadInfo().then(() => doc);
   }
   return docPromise;
