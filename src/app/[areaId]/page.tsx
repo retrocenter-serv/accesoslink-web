@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { areaUrl } from "@/lib/config";
 import { getBrand, getPublicArea } from "@/lib/areas";
 import { getFlujoAtencion } from "@/lib/flujo";
+import { Footer } from "@/components/Footer";
 import type { AreaLink, TeamDirectoryMember } from "@/types";
 
 type Props = {
@@ -298,6 +299,8 @@ export default async function AreaPage({ params, searchParams }: Props) {
           </div>
         </div>
       </div>
+
+      <Footer areaActual={area.area} />
     </div>
   );
 }

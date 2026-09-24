@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAreaSummaries, getBrand } from "@/lib/areas";
+import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function HomePage() {
 
         {!areas.length ? <div className="empty">Aún no hay áreas publicadas.</div> : null}
       </div>
+
+      <Footer />
     </div>
   );
 }
