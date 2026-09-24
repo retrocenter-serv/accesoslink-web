@@ -324,6 +324,10 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 210px;
+  /* Sin esto, un item de flex NUNCA se encoge por debajo de su ancho natural aunque tenga
+     overflow/ellipsis puestos — es la razón por la que el número quedaba invisible en pantallas
+     angostas (el bloque completo se salía del cuadro, que corta con overflow:hidden). */
+  min-width: 0;
 }
 .c-val.link {
   color: var(--c-primario);
@@ -348,6 +352,21 @@ a {
 }
 .wa-btn .material-symbols-rounded {
   font-size: 18px;
+}
+
+/* Pantallas angostas: icono + número ya no comparten la fila con el botón de WhatsApp — el
+   botón pasa a su propia línea, centrado, para que el número nunca compita por espacio y quede
+   cortado/oculto. */
+@media (max-width: 400px) {
+  .c-block {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .c-block .wa-btn {
+    flex: 1 0 100%;
+    justify-content: center;
+    margin-top: 2px;
+  }
 }
 
 /* Card "Conocer al equipo" / "Flujo de atención" — botón que abre un modal (ver Modal.tsx) */
@@ -568,38 +587,45 @@ a {
   margin: 8px 0 0;
 }
 
-.flujo-table-wrap {
+/* Flujo de atención: tarjetas apiladas (rótulo: valor) en vez de tabla — una tabla de varias
+   columnas nunca entra cómoda en el ancho de esta ficha (max 640px, y en el celular mucho
+   menos), así que cualquier columna angosta terminaba con el texto amontonado o cortado. */
+.flujo-cards-wrap {
   max-height: 60vh;
-  overflow: auto;
-  border: 1px solid var(--c-borde);
-  border-radius: 10px;
+  overflow-y: auto;
+}
+.flujo-card {
   background: var(--c-surface);
+  border: 1px solid var(--c-borde);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
 }
-.flujo-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
+.flujo-card:last-child {
+  margin-bottom: 0;
 }
-.flujo-table th {
-  background: var(--c-sutil);
-  color: var(--c-texto);
-  text-align: center;
-  padding: 9px 10px;
-  position: sticky;
-  top: 0;
-  font-weight: 700;
+.flujo-card-row {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--c-borde);
 }
-.flujo-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--c-borde);
-  color: var(--c-texto);
-  vertical-align: top;
-  text-align: left;
-  word-break: break-word;
-}
-.flujo-table tr:last-child td {
+.flujo-card-row:last-child {
   border-bottom: none;
+}
+.flujo-card-label {
+  flex: 0 0 38%;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.flujo-card-value {
+  flex: 1;
+  font-size: 13px;
+  color: var(--c-texto);
+  word-break: break-word;
 }
 
 /* Pie de página persistente (Novedades/Reportar un problema/Política de Privacidad) */

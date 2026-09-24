@@ -85,26 +85,20 @@ export function TeamFlujoCards({
       ) : null}
 
       {modal === "flujo" && flujo ? (
-        <Modal title="Flujo de atención" onClose={() => setModal(null)} wide>
-          <div className="team-card-body flujo-table-wrap">
-            <table className="flujo-table">
-              <thead>
-                <tr>
-                  {flujo.headers.map((h, i) => (
-                    <th key={i}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {flujo.rows.map((row, i) => (
-                  <tr key={i}>
-                    {row.map((cell, j) => (
-                      <td key={j}>{cell}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <Modal title="Flujo de atención" onClose={() => setModal(null)}>
+          <div className="team-card-body flujo-cards-wrap">
+            {flujo.rows.map((row, i) => (
+              <div className="flujo-card" key={i}>
+                {row.map((cell, j) =>
+                  cell ? (
+                    <div className="flujo-card-row" key={j}>
+                      <span className="flujo-card-label">{flujo.headers[j]}</span>
+                      <span className="flujo-card-value">{cell}</span>
+                    </div>
+                  ) : null
+                )}
+              </div>
+            ))}
           </div>
         </Modal>
       ) : null}

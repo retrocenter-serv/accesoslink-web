@@ -139,7 +139,7 @@ export default async function AreaPage({ params, searchParams }: Props) {
             )}
           </div>
 
-          <ShareActions area={area.area} url={publicUrl} encargado={area.encargado} />
+          <ShareActions area={area.area} url={publicUrl} />
 
           <TeamFlujoCards equipo={area.equipo} flujo={flujo} />
 
