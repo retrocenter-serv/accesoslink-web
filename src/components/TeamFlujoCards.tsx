@@ -10,6 +10,14 @@ function EstadoPill({ estado }: { estado: TeamDirectoryMember["estadoMostrado"] 
   return <span className={`m-estado ${info.cls}`}>{info.etiqueta}</span>;
 }
 
+/** La columna que identifica cada caso ("¿Qué necesitas?") se destaca como título de la tarjeta,
+    en vez de ser un rótulo más — así cada caso se distingue de un vistazo. Si esa columna no
+    existe con ese nombre exacto, se usa la primera columna como respaldo razonable. */
+function indiceTitulo(headers: string[]) {
+  const i = headers.findIndex((h) => /necesitas/i.test(h));
+  return i >= 0 ? i : 0;
+}
+
 export function TeamFlujoCards({
   equipo,
   flujo
@@ -85,20 +93,26 @@ export function TeamFlujoCards({
       ) : null}
 
       {modal === "flujo" && flujo ? (
-        <Modal title="Flujo de atención" onClose={() => setModal(null)}>
+        <Modal title="Flujo de atención" onClose={() => setModal(null)} wide extraClassName="modal-card-flujo">
           <div className="team-card-body flujo-cards-wrap">
-            {flujo.rows.map((row, i) => (
-              <div className="flujo-card" key={i}>
-                {row.map((cell, j) =>
-                  cell ? (
-                    <div className="flujo-card-row" key={j}>
-                      <span className="flujo-card-label">{flujo.headers[j]}</span>
-                      <span className="flujo-card-value">{cell}</span>
-                    </div>
-                  ) : null
-                )}
-              </div>
-            ))}
+            <div className="flujo-cards-grid">
+              {flujo.rows.map((row, i) => {
+                const tituloIdx = indiceTitulo(flujo.headers);
+                return (
+                  <div className="flujo-card" key={i}>
+                    {row[tituloIdx] ? <div className="flujo-card-title">{row[tituloIdx]}</div> : null}
+                    {row.map((cell, j) =>
+                      cell && j !== tituloIdx ? (
+                        <div className="flujo-card-row" key={j}>
+                          <span className="flujo-card-label">{flujo.headers[j]}</span>
+                          <span className="flujo-card-value">{cell}</span>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Modal>
       ) : null}

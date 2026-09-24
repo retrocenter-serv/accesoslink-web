@@ -5,17 +5,19 @@ export function Modal({
   title,
   onClose,
   children,
-  wide
+  wide,
+  extraClassName
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   wide?: boolean;
+  extraClassName?: string;
 }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <div
-        className={`modal-card${wide ? " modal-card-wide" : ""}`}
+        className={`modal-card${wide ? " modal-card-wide" : ""}${extraClassName ? ` ${extraClassName}` : ""}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button type="button" className="modal-close-x" onClick={onClose} aria-label="Cerrar">

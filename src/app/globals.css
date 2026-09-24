@@ -587,22 +587,32 @@ a {
   margin: 8px 0 0;
 }
 
-/* Flujo de atención: tarjetas apiladas (rótulo: valor) en vez de tabla — una tabla de varias
-   columnas nunca entra cómoda en el ancho de esta ficha (max 640px, y en el celular mucho
-   menos), así que cualquier columna angosta terminaba con el texto amontonado o cortado. */
+/* Flujo de atención: tarjetas (rótulo: valor) en vez de tabla — una tabla de varias columnas
+   nunca entra cómoda en el ancho de esta ficha (max 640px, y en el celular mucho menos), así que
+   cualquier columna angosta terminaba con el texto amontonado o cortado. En pantallas anchas
+   (PC), las tarjetas se acomodan en varias columnas (grid) para que la barra de desplazamiento
+   vertical no quede tan larga — en el celular, una sola columna. */
 .flujo-cards-wrap {
-  max-height: 60vh;
+  max-height: 70vh;
   overflow-y: auto;
+}
+.flujo-cards-grid {
+  display: grid;
+  gap: 10px;
 }
 .flujo-card {
   background: var(--c-surface);
   border: 1px solid var(--c-borde);
   border-radius: 12px;
   padding: 12px 14px;
-  margin-bottom: 10px;
 }
-.flujo-card:last-child {
-  margin-bottom: 0;
+.flujo-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-primario);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--c-borde);
 }
 .flujo-card-row {
   display: flex;
@@ -626,6 +636,18 @@ a {
   font-size: 13px;
   color: var(--c-texto);
   word-break: break-word;
+}
+
+/* PC: modal más ancho SOLO para Flujo de atención (Novedades/Privacidad se quedan en 640px,
+   donde el texto largo se lee mejor) y tarjetas en 2 columnas — reduce el largo del scroll
+   vertical. */
+@media (min-width: 720px) {
+  .modal-card-flujo {
+    max-width: min(880px, calc(100vw - 48px));
+  }
+  .flujo-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Pie de página persistente (Novedades/Reportar un problema/Política de Privacidad) */
