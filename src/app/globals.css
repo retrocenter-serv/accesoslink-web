@@ -2,12 +2,17 @@
   globals.css
   Puerto directo del look & feel del sistema GAS (GlobalStyles.html + AccesosStyles.html):
   mismos nombres de variables/clases donde tiene sentido, para que este sitio se vea como
-  la misma app, no como un landing page generico. Las variables de color se sobrescriben
-  en runtime desde la marca real (ver page.tsx / [areaId]/page.tsx, style={{"--c-primario":...}}).
+  la misma app, no como un landing page generico.
+
+  Solo --c-primario/--c-secundario (el color de marca real) se inyectan en runtime por página
+  (style={{"--c-primario":...}}) — el resto de los tokens (fondo/superficie/texto/bordes) se
+  quedan como reglas de hoja de estilo a propósito, para que el modo oscuro (mas abajo) pueda
+  sobreescribirlos: un color puesto inline en el elemento le gana a cualquier @media, así que
+  si TODOS los tokens vinieran inline, el modo oscuro nunca podría aplicar.
 */
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   --c-primario: #004a99;
   --c-secundario: #16a34a;
   --c-texto: #1c2b4a;
@@ -16,6 +21,20 @@
   --c-surface: #ffffff;
   --c-sutil: #f7f9fc;
   --c-borde: #dfe4ea;
+}
+
+/* Modo oscuro automático (según el sistema del visitante) — se queda con los colores de marca
+   (primario/secundario), solo cambian los neutros. Sin selector para forzarlo manualmente: no
+   hay un botón de tema en esta fase, solo sigue lo que ya eligió el visitante en su dispositivo. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-texto: #eef2f8;
+    --c-muted: #9aa7bd;
+    --c-app-bg: #0b1220;
+    --c-surface: #141b2c;
+    --c-sutil: #1b2337;
+    --c-borde: #293351;
+  }
 }
 
 * {
@@ -31,11 +50,12 @@ body {
 body {
   min-height: 100vh;
   background: var(--c-app-bg);
-  background-image: linear-gradient(180deg, #ffffff 0%, var(--c-app-bg) 100%);
+  background-image: linear-gradient(180deg, var(--c-surface) 0%, var(--c-app-bg) 100%);
   background-attachment: fixed;
   color: var(--c-texto);
   font-family: "Poppins", system-ui, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {
@@ -110,7 +130,7 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #fff;
+  background: var(--c-surface);
   border-radius: 12px;
   padding: 12px 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -167,7 +187,7 @@ a {
 
 /* Ficha publica (igual a .ficha/.banner en AccesosStyles.html) */
 .ficha {
-  background: #fff;
+  background: var(--c-surface);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -533,11 +553,15 @@ a {
 .qr {
   width: 150px;
   height: 150px;
+  /* Blanco fijo a propósito (no var(--c-surface)): un QR necesita fondo claro real para poder
+     escanearse, sin importar el tema del visitante. */
   background: #fff;
   padding: 6px;
+  border-radius: 12px;
   box-sizing: content-box;
   display: block;
   margin: 0 auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 .foot-help {
   font-size: 12px;
@@ -550,7 +574,7 @@ a {
   overflow: auto;
   border: 1px solid var(--c-borde);
   border-radius: 10px;
-  background: #fff;
+  background: var(--c-surface);
 }
 .flujo-table {
   width: 100%;
@@ -630,7 +654,7 @@ a {
 }
 .modal-card {
   position: relative;
-  background: #fff;
+  background: var(--c-surface);
   border-radius: 16px;
   width: 100%;
   max-width: 360px;
@@ -699,7 +723,7 @@ a {
   border-radius: 8px;
   font: 500 14px "Poppins", sans-serif;
   color: var(--c-texto);
-  background: #fff;
+  background: var(--c-surface);
   outline: none;
 }
 .inp::placeholder {
@@ -735,7 +759,7 @@ a {
   padding: 10px 14px;
   border: 1px solid var(--c-borde);
   border-radius: 10px;
-  background: #fff;
+  background: var(--c-surface);
   color: var(--c-texto);
   font: 600 13px "Poppins", sans-serif;
   cursor: pointer;
@@ -783,5 +807,185 @@ a {
 @media (max-width: 480px) {
   .banner-caption {
     padding: 14px 12px 16px;
+  }
+}
+
+/* ============================= Buscador (matriz de áreas) ============================= */
+.search {
+  position: relative;
+  margin-bottom: 12px;
+}
+.search .material-symbols-rounded {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-muted);
+  font-size: 20px;
+}
+.search input {
+  width: 100%;
+  padding: 11px 12px 11px 40px;
+  border: 1px solid var(--c-borde);
+  border-radius: 12px;
+  font: 14px "Poppins", sans-serif;
+  color: var(--c-texto);
+  background: var(--c-surface);
+  outline: none;
+}
+.search input:focus {
+  border-color: var(--c-primario);
+}
+
+/* ============================= Compartir / Guardar contacto ============================= */
+.share-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: -4px 0 16px;
+}
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--c-borde);
+  background: var(--c-surface);
+  color: var(--c-primario);
+  font: 600 12.5px "Poppins", sans-serif;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.share-btn:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+.share-btn .material-symbols-rounded {
+  font-size: 17px;
+}
+.share-aviso {
+  font-size: 12px;
+  color: var(--c-secundario);
+  font-weight: 600;
+}
+
+/* ============================= Movimiento: entrada + realce sutil ============================= */
+/* Cabecera de inicio con un acento de marca animado, pero discreto — pensado para leer serio,
+   no para "flashear". Una sola pasada de brillo al cargar, nunca un loop indefinido. */
+.hdr-hero {
+  position: relative;
+}
+.hdr-hero::before {
+  content: "";
+  position: absolute;
+  inset: -14px -14px auto -14px;
+  height: 96px;
+  z-index: -1;
+  border-radius: 20px;
+  background: radial-gradient(
+    ellipse 70% 100% at 20% 0%,
+    color-mix(in srgb, var(--c-primario) 16%, transparent),
+    transparent 70%
+  );
+  animation: heroFade 900ms ease-out both;
+}
+
+@keyframes heroFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmerOnce {
+  from {
+    background-position: -120% 0;
+  }
+  to {
+    background-position: 220% 0;
+  }
+}
+
+.area-row,
+.acc-row {
+  animation: fadeUp 360ms ease-out both;
+}
+.area-row:hover {
+  transform: translateY(-2px);
+}
+.acc-row {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.acc-row:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+.acc-ico,
+.area-ico {
+  transition: transform 0.15s ease;
+}
+.acc-row:hover .acc-ico,
+.area-row:hover .area-ico {
+  transform: scale(1.08);
+}
+
+.team-card-details {
+  animation: fadeUp 400ms ease-out both;
+}
+.team-card-body .member {
+  animation: fadeUp 300ms ease-out both;
+}
+
+/* Brillo de una sola pasada sobre el banner, al cargar — nada de loops. */
+.banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Mismo z-index que .banner-caption: pinta sobre el degradado/scrim (para que el brillo se
+     note), pero el título llega después en el DOM y con igual z-index queda arriba, legible. */
+  z-index: 1;
+  background: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 60%
+  );
+  background-size: 250% 100%;
+  animation: shimmerOnce 1400ms ease-out 200ms both;
+  pointer-events: none;
+}
+
+/* Quien pide menos movimiento, no recibe ninguna animación — ni siquiera la única pasada. */
+@media (prefers-reduced-motion: reduce) {
+  .hdr-hero::before,
+  .area-row,
+  .acc-row,
+  .team-card-details,
+  .team-card-body .member,
+  .banner::before {
+    animation: none;
+  }
+  .area-row:hover,
+  .acc-row:hover,
+  .acc-row:hover .acc-ico,
+  .area-row:hover .area-ico {
+    transform: none;
   }
 }

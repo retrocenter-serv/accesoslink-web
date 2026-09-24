@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getAreaSummaries, getBrand } from "@/lib/areas";
 import { Footer } from "@/components/Footer";
+import { AreaList } from "@/components/AreaList";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +12,15 @@ export default async function HomePage() {
       className="wrap"
       style={
         {
-          "--c-app-bg": brand.colorAppBg,
-          "--c-surface": brand.colorSurface,
-          "--c-texto": brand.colorTexto,
-          "--c-muted": brand.colorMuted,
+          // Solo el color de marca real (accento) se inyecta — los neutros (fondo, superficie,
+          // texto, bordes) se quedan en la hoja de estilo para que el modo oscuro del visitante
+          // pueda aplicar (ver globals.css: un valor inline nunca lo puede sobreescribir un @media).
           "--c-primario": brand.colorPrimario,
-          "--c-secundario": brand.colorSecundario,
-          "--c-borde": brand.colorBorde
+          "--c-secundario": brand.colorSecundario
         } as React.CSSProperties
       }
     >
-      <div className="hdr">
+      <div className="hdr hdr-hero">
         <div className="hdr-brand">
           {brand.logoUrl ? (
             <div className="hdr-logo-group">
@@ -38,24 +36,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div className="area-list" aria-label="Áreas disponibles">
-        {areas.map((area) => (
-          <Link className="area-row" href={`/${area.id}`} key={area.id}>
-            <span className="area-ico">
-              <span className="material-symbols-rounded">{area.simbolo || "folder"}</span>
-            </span>
-            <span className="area-meta">
-              <div className="area-name">{area.area}</div>
-              <div className="area-count">
-                {area.count} acceso{area.count === 1 ? "" : "s"}
-              </div>
-            </span>
-            <span className="material-symbols-rounded chev">chevron_right</span>
-          </Link>
-        ))}
-
-        {!areas.length ? <div className="empty">Aún no hay áreas publicadas.</div> : null}
-      </div>
+      <AreaList areas={areas} />
 
       <Footer />
     </div>

@@ -3,6 +3,7 @@ import { areaUrl } from "@/lib/config";
 import { getBrand, getPublicArea } from "@/lib/areas";
 import { getFlujoAtencion } from "@/lib/flujo";
 import { Footer } from "@/components/Footer";
+import { ShareActions } from "@/components/ShareActions";
 import type { AreaLink, TeamDirectoryMember } from "@/types";
 
 type Props = {
@@ -77,13 +78,14 @@ function EstadoPill({ estado }: { estado: TeamDirectoryMember["estadoMostrado"] 
 function AccesosList({ links, externo }: { links: AreaLink[]; externo: boolean }) {
   return (
     <div className="acc-list">
-      {links.map((link) => (
+      {links.map((link, i) => (
         <a
           className="acc-row"
           href={link.url}
           key={`${link.titulo}-${link.url}`}
           target="_blank"
           rel="noreferrer"
+          style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
         >
           <span className="acc-ico">
             <span className="material-symbols-rounded">{TIPO_GLYPH[link.tipo] || "link"}</span>
@@ -119,13 +121,9 @@ export default async function AreaPage({ params, searchParams }: Props) {
       className="wrap"
       style={
         {
-          "--c-app-bg": brand.colorAppBg,
-          "--c-surface": brand.colorSurface,
-          "--c-texto": brand.colorTexto,
-          "--c-muted": brand.colorMuted,
+          // Solo el color de marca real (accento) se inyecta — ver el mismo comentario en page.tsx.
           "--c-primario": brand.colorPrimario,
-          "--c-secundario": brand.colorSecundario,
-          "--c-borde": brand.colorBorde
+          "--c-secundario": brand.colorSecundario
         } as React.CSSProperties
       }
     >
@@ -191,6 +189,8 @@ export default async function AreaPage({ params, searchParams }: Props) {
               </div>
             )}
           </div>
+
+          <ShareActions area={area.area} url={publicUrl} encargado={area.encargado} />
 
           {area.equipo.length ? (
             <details className="team-card-details">
