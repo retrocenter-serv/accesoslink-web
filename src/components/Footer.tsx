@@ -1,36 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Modal as ModalShell } from "@/components/Modal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { APP_CHANGELOG, APP_VERSION, APP_VERSION_FECHA } from "@/lib/config";
 
 type ModalKind = "novedades" | "privacidad" | "reportar" | null;
-
-function ModalShell({
-  title,
-  onClose,
-  children,
-  wide
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  wide?: boolean;
-}) {
-  return (
-    <div className="modal-back" onClick={onClose}>
-      <div
-        className={`modal-card${wide ? " modal-card-wide" : ""}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Cerrar">
-          <span className="material-symbols-rounded">close</span>
-        </button>
-        <div className="modal-title">{title}</div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function NovedadesModal({ onClose }: { onClose: () => void }) {
   return (
@@ -193,6 +168,7 @@ export function Footer({ areaActual = "" }: { areaActual?: string }) {
         <span className="app-footer-version">
           v{APP_VERSION} · {APP_VERSION_FECHA}
         </span>
+        <ThemeToggle />
         <button type="button" className="app-footer-btn" onClick={() => setModal("novedades")}>
           Novedades
         </button>

@@ -43,6 +43,13 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
           rel="stylesheet"
         />
+        {/* Bloqueante a propósito (sin async/defer): aplica el tema guardado ANTES del primer
+            pintado, para que no haya un parpadeo del tema equivocado al cargar. Ver ThemeToggle.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('accesoslink-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}`
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { areaUrl } from "@/lib/config";
 import { getBrand, getPublicArea } from "@/lib/areas";
 import { getFlujoAtencion } from "@/lib/flujo";
+import { mailHref, qrSrc, TIPO_GLYPH, waHref } from "@/lib/format";
 import { Footer } from "@/components/Footer";
 import { ShareActions } from "@/components/ShareActions";
-import type { AreaLink, TeamDirectoryMember } from "@/types";
+import { TeamFlujoCards } from "@/components/TeamFlujoCards";
+import type { AreaLink } from "@/types";
 
 type Props = {
   params: Promise<{ areaId: string }>;
@@ -20,59 +22,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: area.area,
     description: `Accesos rapidos de ${area.area}.`
   };
-}
-
-/** Mismo criterio que initials() en AccesosClient.html: iniciales de las 2 primeras palabras "largas". */
-function initials(name: string) {
-  const n = (name || "").trim();
-  if (!n) return "?";
-  const parts = n.split(" ").filter((w) => w.length > 2).slice(0, 2);
-  const out = parts.map((w) => w[0]).join("") || n.slice(0, 2);
-  return out.toUpperCase();
-}
-
-/** Mismo criterio que waDigits()/waHref() en AccesosClient.html (CC por defecto: Peru). */
-function waHref(v: string) {
-  let digits = (v || "").replace(/[^0-9]/g, "");
-  if (digits.length === 9) digits = "51" + digits;
-  return `https://wa.me/${digits}`;
-}
-
-function mailHref(v: string) {
-  return `mailto:${v || ""}`;
-}
-
-function qrSrc(url: string) {
-  return (
-    "https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&ecc=M&color=1c2b4a&bgcolor=ffffff&data=" +
-    encodeURIComponent(url)
-  );
-}
-
-/** Mismo catalogo que Catalogs_tipos_() en GAS (Catalogs.gs). */
-const TIPO_GLYPH: Record<string, string> = {
-  FORM: "assignment",
-  DOC: "description",
-  SHEET: "table_chart",
-  DRIVE: "folder",
-  CAL: "calendar_month",
-  MAIL: "mail",
-  MEET: "videocam",
-  DIR: "contacts",
-  MAP: "location_on",
-  LINK: "link"
-};
-
-const ESTADO_PILL: Record<string, { etiqueta: string; cls: string }> = {
-  PRESENTE: { etiqueta: "Presente", cls: "m-estado-ok" },
-  AUSENTE: { etiqueta: "Ausente", cls: "m-estado-muted" },
-  REFRIGERIO: { etiqueta: "En refrigerio", cls: "m-estado-warn" },
-  OTRO: { etiqueta: "Otro", cls: "m-estado-warn" }
-};
-
-function EstadoPill({ estado }: { estado: TeamDirectoryMember["estadoMostrado"] }) {
-  const info = ESTADO_PILL[estado] || ESTADO_PILL.PRESENTE;
-  return <span className={`m-estado ${info.cls}`}>{info.etiqueta}</span>;
 }
 
 function AccesosList({ links, externo }: { links: AreaLink[]; externo: boolean }) {
@@ -192,86 +141,7 @@ export default async function AreaPage({ params, searchParams }: Props) {
 
           <ShareActions area={area.area} url={publicUrl} encargado={area.encargado} />
 
-          {area.equipo.length ? (
-            <details className="team-card-details">
-              <summary className="team-card">
-                <span className="team-ico ico-equipo">
-                  <span className="material-symbols-rounded">groups</span>
-                </span>
-                <span className="t-meta">
-                  <span className="t-title">Conocer al equipo</span>
-                  <br />
-                  <span className="t-sub">
-                    {area.equipo.length} integrante{area.equipo.length === 1 ? "" : "s"}
-                  </span>
-                </span>
-                <span className="material-symbols-rounded chev">chevron_right</span>
-              </summary>
-              <div className="team-card-body">
-                {area.equipo.map((member) => (
-                  <div className="member" key={`${member.nombre}-${member.email}`}>
-                    <div className="avatar">{initials(member.nombre)}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="m-name">
-                        {member.nombre}
-                        <EstadoPill estado={member.estadoMostrado} />
-                      </div>
-                      {member.cargo ? <div className="m-cargo">{member.cargo}</div> : null}
-                      {member.estadoNota ? <div className="m-nota">{member.estadoNota}</div> : null}
-                      {member.email ? (
-                        <div className="m-line">
-                          <a href={mailHref(member.email)}>{member.email}</a>
-                        </div>
-                      ) : null}
-                      {member.movil ? (
-                        <div className="m-line">
-                          <a href={waHref(member.movil)} target="_blank" rel="noreferrer">
-                            {member.movil}
-                          </a>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </details>
-          ) : null}
-
-          {flujo && flujo.rows.length ? (
-            <details className="team-card-details">
-              <summary className="team-card">
-                <span className="team-ico ico-flujo">
-                  <span className="material-symbols-rounded">support_agent</span>
-                </span>
-                <span className="t-meta">
-                  <span className="t-title">Flujo de atención</span>
-                  <br />
-                  <span className="t-sub">Guía rápida de contacto</span>
-                </span>
-                <span className="material-symbols-rounded chev">chevron_right</span>
-              </summary>
-              <div className="team-card-body flujo-table-wrap">
-                <table className="flujo-table">
-                  <thead>
-                    <tr>
-                      {flujo.headers.map((h, i) => (
-                        <th key={i}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flujo.rows.map((row, i) => (
-                      <tr key={i}>
-                        {row.map((cell, j) => (
-                          <td key={j}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          ) : null}
+          <TeamFlujoCards equipo={area.equipo} flujo={flujo} />
 
           <div className="acc-head">Accesos rápidos</div>
           {area.links.length ? (

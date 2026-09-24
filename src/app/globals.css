@@ -23,11 +23,17 @@
   --c-borde: #dfe4ea;
 }
 
-/* Modo oscuro automático (según el sistema del visitante) — se queda con los colores de marca
-   (primario/secundario), solo cambian los neutros. Sin selector para forzarlo manualmente: no
-   hay un botón de tema en esta fase, solo sigue lo que ya eligió el visitante en su dispositivo. */
+/*
+  Modo oscuro — tres estados, no dos (ver el switch en Footer.tsx/ThemeToggle.tsx):
+  1. Nada elegido todavía: sigue el sistema del visitante (@media, primer bloque de abajo).
+  2. Elección explícita "claro": gana siempre, incluso si el sistema está en oscuro — por eso el
+     @media va con :not([data-theme="light"]).
+  3. Elección explícita "oscuro": bloque aparte (:root[data-theme="dark"]), gana siempre — al no
+     estar dentro de un @media, aplica sin importar lo que diga el sistema.
+  En los tres casos, los colores de marca (primario/secundario) no cambian — solo los neutros.
+*/
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --c-texto: #eef2f8;
     --c-muted: #9aa7bd;
     --c-app-bg: #0b1220;
@@ -35,6 +41,14 @@
     --c-sutil: #1b2337;
     --c-borde: #293351;
   }
+}
+:root[data-theme="dark"] {
+  --c-texto: #eef2f8;
+  --c-muted: #9aa7bd;
+  --c-app-bg: #0b1220;
+  --c-surface: #141b2c;
+  --c-sutil: #1b2337;
+  --c-borde: #293351;
 }
 
 * {
@@ -336,16 +350,25 @@ a {
   font-size: 18px;
 }
 
-/* Card "Conocer al equipo" / equipo en linea */
+/* Card "Conocer al equipo" / "Flujo de atención" — botón que abre un modal (ver Modal.tsx) */
 .team-card {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   background: var(--c-sutil);
+  border: none;
   border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 16px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.team-card:hover {
+  background: color-mix(in srgb, var(--c-sutil), var(--c-primario) 6%);
 }
 .team-card .team-ico {
   width: 38px;
@@ -372,33 +395,9 @@ a {
 .team-card .ico-flujo {
   background: var(--c-secundario);
 }
-/* <details>/<summary> nativo, sin JS: mismo look que el boton-modal de GAS. */
-.team-card-details {
-  margin-bottom: 16px;
-}
-.team-card-details summary {
-  list-style: none;
-  margin-bottom: 0;
-}
-.team-card-details summary::-webkit-details-marker,
-.team-card-details summary::marker {
-  display: none;
-  content: "";
-}
-.team-card-details .chev {
-  transition: transform 0.15s ease;
-}
-.team-card-details[open] summary {
-  border-radius: 12px 12px 0 0;
-}
-.team-card-details[open] .chev {
-  transform: rotate(90deg);
-}
+/* Contenido de los modales de Equipo/Flujo (ver TeamFlujoCards.tsx) */
 .team-card-body {
-  background: var(--c-sutil);
-  border-radius: 0 0 12px 12px;
-  padding: 4px 14px 10px;
-  margin-top: -4px;
+  padding: 4px 0 0;
 }
 .acc-head {
   font-size: 11px;
@@ -639,6 +638,56 @@ a {
 }
 .app-footer-btn .material-symbols-rounded {
   font-size: 15px;
+}
+
+/* Switch de modo oscuro (pie de página) */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 999px;
+  color: var(--c-muted);
+  font: 600 12px "Poppins", sans-serif;
+}
+.theme-switch:hover {
+  color: var(--c-primario);
+}
+.theme-switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--c-borde);
+  transition: background 0.15s ease;
+  flex: 0 0 auto;
+}
+.theme-switch[aria-pressed="true"] .theme-switch-track {
+  background: var(--c-primario);
+}
+.theme-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.theme-switch[aria-pressed="true"] .theme-switch-thumb {
+  transform: translateX(14px);
+}
+.theme-switch-thumb .material-symbols-rounded {
+  font-size: 11px;
+  color: var(--c-primario);
 }
 
 /* Modales (igual a GlobalStyles.html en GAS) */
@@ -946,11 +995,36 @@ a {
   transform: scale(1.08);
 }
 
-.team-card-details {
+.team-card {
   animation: fadeUp 400ms ease-out both;
 }
 .team-card-body .member {
   animation: fadeUp 300ms ease-out both;
+}
+
+@keyframes modalBackIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modalCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.modal-back {
+  animation: modalBackIn 160ms ease-out both;
+}
+.modal-card {
+  animation: modalCardIn 200ms ease-out both;
 }
 
 /* Brillo de una sola pasada sobre el banner, al cargar — nada de loops. */
@@ -977,8 +1051,10 @@ a {
   .hdr-hero::before,
   .area-row,
   .acc-row,
-  .team-card-details,
+  .team-card,
   .team-card-body .member,
+  .modal-back,
+  .modal-card,
   .banner::before {
     animation: none;
   }
